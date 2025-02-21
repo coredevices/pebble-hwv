@@ -52,8 +52,8 @@ static int codec_setup(void)
 		{0X51, 0x00},
 		// setup Master bias enable
 		{0X23, 0x08},
-		// Sets the input clock range for the PLL 40-80MHz
-		{0X27, 0x00},
+		// Sets the input clock range for the PLL 2-10MHz
+		{0X27, 0x80},
 		// setup MIXOUT_R_SELECT to DAC_R selected
 		{0X4C, 0x08},
 		// setup MIXOUT_R_CTRL to MIXOUT_R mixer amp enable and MIXOUT R mixer enable
@@ -110,6 +110,11 @@ static int i2s_setup(void)
 	if (ret < 0) {
 		return ret;
 	}
+
+	// enable MCLK and set wclk to 44.1kHz(32M / 23 / 32) https://docs.nordicsemi.com/bundle/ps_nrf52840/page/i2s.html#ariaid-title6
+	*(volatile uint32_t *)0x40025510 = 0x00000001;
+	*(volatile uint32_t *)0x40025514 = 0x0B000000;
+	*(volatile uint32_t *)0x40025518 = 0x00000000;
 
 	return 0;
 }
