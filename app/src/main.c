@@ -80,5 +80,12 @@ int main(void)
 		printf("Failed to initialize speaker module (%d)\n", ret);
 	}
 
+	// uncomment to enable BLE
+	shell_execute_cmd(NULL, "hwv ble on");
+
+	// uncomment to enable display and show a pattern
+	shell_execute_cmd(NULL, "hwv display on");
+	shell_execute_cmd(NULL, "hwv display vpattern");
+
 	return 0;
 }
