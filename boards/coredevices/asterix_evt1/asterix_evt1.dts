@@ -216,7 +216,7 @@
 		reg = <0>;
 		writeoc = "pp4o";
 		readoc = "read4io";
-		sck-frequency = <32000000>;
+		sck-frequency = <8000000>;
 		quad-enable-requirements = "S2B1v1";
 		jedec-id = [c8 60 19];
 		sfdp-bfp = [
