@@ -18,8 +18,6 @@ static bool initialized;
 static int codec_setup(void)
 {
 	int ret;
-	uint8_t reg_addr;
-	uint8_t out_data;
 
 	static const uint8_t init[][2] = {
 		// word freq to 44.1khz
@@ -34,18 +32,18 @@ static int codec_setup(void)
 		{0x6d, 0x80},
 		// enable DAC_R
 		{0x6a, 0x80},
-		// setup MIXIN_R_GAIN to 18dB
-		{0x35, 0x0f},
+		// setup MIXIN_R_GAIN to 0dB
+		{0x35, 0x03},
 		// enable MIXIN_R
 		{0x66, 0x80},
 		// setup DIG_ROUTING_DAI to DAI
 		{0x21, 0x32},
 		// setup DIG_ROUTING_DAC to mono
 		{0x2a, 0xba},
-		// setup DAC_L_GAIN to 12dB
-		{0x45, 0x7f},
-		// setup DAC_R_GAIN to 12dB
-		{0x46, 0x7f},
+		// setup DAC_L_GAIN to -12dB
+		{0x45, 0x5f},
+		// setup DAC_R_GAIN to -12dB
+		{0x46, 0x5f},
 		// enable DAI, 16bit per channel
 		{0x29, 0x80},
 		// setup SYSTEM_MODES_OUTPUT to use DAC_R,DAC_L and LINE
@@ -60,22 +58,16 @@ static int codec_setup(void)
 		{0X6F, 0x98},
 	};
 
-	reg_addr = 0x1d;
-	ret = i2c_reg_write_byte_dt(&codec, reg_addr, 0x80);
+	// CIF_CTRL: soft reset
+	ret = i2c_reg_write_byte_dt(&codec, 0x1d, 0x80);
 	if (ret < 0) {
 		return ret;
 	}
 
 	k_msleep(10);
 
-	reg_addr = 0x06;
-	ret = i2c_write_read_dt(&codec, &reg_addr, 1, &out_data, 1);
-	if (ret < 0) {
-		return ret;
-	}
-
-	reg_addr = 0xfd;
-	ret = i2c_write_read_dt(&codec, &reg_addr, 1, &out_data, 1);
+	// SYSTEM_ACTIVE: wake-up
+	ret = i2c_reg_write_byte_dt(&codec, 0xfd, 0x01);
 	if (ret < 0) {
 		return ret;
 	}
@@ -90,6 +82,11 @@ static int codec_setup(void)
 	}
 
 	return 0;
+}
+
+static int codec_standby(void)
+{
+	return i2c_reg_write_byte_dt(&codec, 0xfd, 0x00);
 }
 
 static int i2s_setup(void)
@@ -153,6 +150,11 @@ static int cmd_speaker_play(const struct shell *sh, size_t argc, char **argv)
 		if (ret < 0) {
 			return ret;
 		}
+	}
+
+	ret = codec_standby();
+	if (ret < 0) {
+		return ret;
 	}
 
 	shell_print(sh, "Speaker test done");
