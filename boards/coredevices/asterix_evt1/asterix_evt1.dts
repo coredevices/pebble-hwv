@@ -239,6 +239,7 @@
 	pinctrl-0 = <&spi3_default>;
 	pinctrl-1 = <&spi3_sleep>;
 	pinctrl-names = "default", "sleep";
+	zephyr,pm-device-runtime-auto;
 
 	ls013b7dh05: display@0 {
 		compatible = "sharp,ls013b7dh05";
