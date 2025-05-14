@@ -39,20 +39,31 @@ static struct dmic_cfg cfg = {
 			.req_num_chan = 1,
 		},
 };
-
+#include <zephyr/drivers/flash.h>
+#include <zephyr/pm/device.h>
+static const struct device *const flash = DEVICE_DT_GET(DT_ALIAS(flash0));
 static bool initialized;
 
 static int cmd_mic_capture(const struct shell *sh, size_t argc, char **argv)
 {
-	int ret;
+	int ret,time = 1;
 	void *buffer;
 	uint32_t size;
-
+	struct flash_pages_info info;
+	uint32_t addr=0;
+	int16_t buf;
+	
+	if (argc > 1) {
+		time = atoi(argv[1]);
+	}
+	time *= (1000 / CAPTURE_MS);
 	if (!initialized) {
 		shell_error(sh, "Microphone module not initialized");
 		return -EPERM;
 	}
-
+	ret = pm_device_action_run(flash, PM_DEVICE_ACTION_RESUME);
+	ret = flash_get_page_info_by_offs(flash, addr, &info);
+	ret = flash_erase(flash, addr, info.size);
 	ret = dmic_configure(dmic, &cfg);
 	if (ret < 0) {
 		shell_error(sh, "Failed to configure DMIC(%d)", ret);
@@ -64,27 +75,28 @@ static int cmd_mic_capture(const struct shell *sh, size_t argc, char **argv)
 		shell_error(sh, "START trigger failed (%d)", ret);
 		return ret;
 	}
-
-	ret = dmic_read(dmic, 0, &buffer, &size, TIMEOUT_MS);
-	if (ret < 0) {
-		shell_error(sh, "DMIC read failed (%d)", ret);
-		return ret;
+	for (int i = 0; i < time; i++) {
+		ret = dmic_read(dmic, 0, &buffer, &size, TIMEOUT_MS);
+		if (ret < 0) {
+			shell_error(sh, "DMIC read failed (%d)", ret);
+			return ret;
+		}
+		ret = flash_write(flash, addr, buffer, size);
+		addr += size;
+		k_mem_slab_free(&mem_slab, buffer);
 	}
-
 	ret = dmic_trigger(dmic, DMIC_TRIGGER_STOP);
 	if (ret < 0) {
 		shell_error(sh, "STOP trigger failed (%d)", ret);
 		return ret;
 	}
-
 	shell_print(sh, "S");
-	for (uint32_t i = 0U; i < size / 2; i++) {
-		shell_print(sh, "%d", ((int16_t *)buffer)[i]);
+	for (int i = 0; i < addr / 2; i++) {
+		ret = flash_read(flash, i * 2 , &buf, 2);
+		shell_print(sh, "%d", buf);
 	}
 	shell_print(sh, "E");
-
-	k_mem_slab_free(&mem_slab, buffer);
-
+	(void)pm_device_action_run(flash, PM_DEVICE_ACTION_SUSPEND);
 	return 0;
 }
 
