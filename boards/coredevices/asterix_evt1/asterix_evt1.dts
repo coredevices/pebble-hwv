@@ -224,6 +224,7 @@
 		readoc = "read4io";
 		sck-frequency = <8000000>;
 		quad-enable-requirements = "S2B1v1";
+		address-size-32;
 		jedec-id = [c8 60 19];
 		sfdp-bfp = [
 			e5 20 f3 ff  ff ff ff 0f  44 eb 08 6b  08 3b 42 bb
