@@ -99,6 +99,7 @@ To get meaningful status reports, you will need to plug the battery to `VBAT`,
 | `hwv flash erase $ADDR` | Erase flash page for the given `$ADDR` |
 | `hwv flash read $ADDR $N` | Read `$N` bytes from address `$ADDR` |
 | `hwv flash write $ADDR $VAL` | Write `$VAL` (hex encoded, e.g. `aabbccdd`) to `$ADDR` |
+| `hwv flash stress $ITERS` | Perform flash stress test `$ITERS` times |
 
 ### Haptic
 
