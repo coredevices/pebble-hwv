@@ -21,3 +21,11 @@ target_sources(
     src/press.c
     src/speaker.c
 )
+
+if (CONFIG_BOARD_ASTERIX_EVT1)
+  target_sources(
+    app
+    PRIVATE
+      src/lfxo.c
+  )
+endif()

@@ -138,6 +138,12 @@ python scripts/wavgen.py -p /dev/$PORT -o test.wav
 Then listen the generated WAV file in loop mode using any audio player. You
 should hear the same tone you generated.
 
+### LFXO accuracy (Asterix only)
+
+| Command | Description |
+| --- | --- |
+| `hwv lfxo test` | Obtain LFXO accuracy |
+
 ## Low power measurement tips
 
 To perform low-power measurements it is advised to compile with serial disabled

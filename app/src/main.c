@@ -10,6 +10,10 @@
 #include "mic.h"
 #include "press.h"
 
+#ifdef CONFIG_BOARD_ASTERIX_EVT1
+#include "lfxo.h"
+#endif
+
 #include <stdio.h>
 
 #include <zephyr/shell/shell.h>
@@ -79,6 +83,13 @@ int main(void)
 	if (ret < 0) {
 		printf("Failed to initialize speaker module (%d)\n", ret);
 	}
+
+#ifdef CONFIG_BOARD_ASTERIX_EVT1
+	ret = lfxo_init();
+	if (ret < 0) {
+		printf("Failed to initialize LFXO module (%d)\n", ret);
+	}
+#endif
 
 	return 0;
 }
