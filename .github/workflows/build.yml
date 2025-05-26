@@ -1,4 +1,4 @@
-name: Build and test app in NCS docker container
+name: Build
 
 on:
   push:
