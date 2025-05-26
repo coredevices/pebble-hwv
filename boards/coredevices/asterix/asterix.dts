@@ -23,7 +23,7 @@
 		charger0 = &charger;
 		led0 = &lm3508;
 		light0 = &opt3001;
-		mag0 = &bmm350;
+		mag0 = &mmc5603;
 		press0 = &bmp390;
 		imu0 = &lsm6dso;
 		haptic0 = &drv2604;
@@ -153,10 +153,10 @@
 	pinctrl-1 = <&i2c1_sleep>;
 	pinctrl-names = "default", "sleep";
 
-	bmm350: magnetic-sensor@14 {
-		compatible = "bosch,bmm350";
-		reg = <0x14>;
-		drdy-gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+	mmc5603: magnetic-sensor@30 {
+		compatible = "memsic,mmc56x3";
+		reg = <0x30>;
+		magn-odr = <0>;
 	};
 
 	da7212: audio-codec@1a {
