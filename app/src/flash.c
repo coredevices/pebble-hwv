@@ -171,7 +171,8 @@ static int cmd_flash_write(const struct shell *sh, size_t argc, char **argv)
 	}
 
 	for (size_t i = 0U; i < data_len; i++) {
-		buf[i] = strtoul(&argv[2][i * 2], NULL, 16);
+		char hex_byte[3] = { argv[2][i * 2], argv[2][i * 2 + 1], '\0' };
+		buf[i] = (uint8_t)strtoul(hex_byte, NULL, 16);
 	}
 
 	ret = pm_device_action_run(flash, PM_DEVICE_ACTION_RESUME);
