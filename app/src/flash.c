@@ -7,6 +7,8 @@
 #include <zephyr/random/random.h>
 #include <zephyr/shell/shell.h>
 
+#include <nrfx_qspi.h>
+
 #define FLASH_STRESS_TEST_SIZE 1024
 
 static const struct device *const flash = DEVICE_DT_GET(DT_ALIAS(flash0));
@@ -309,6 +311,215 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_SUBCMD_SET_END);
 
 SHELL_SUBCMD_ADD((hwv), flash, &sub_flash_cmds, "Flash", NULL, 0, 0);
+
+static const int RDSR1 = 0x05;
+static const int SECURITY_REGISTER_ID = 0x20;
+static const int OTP_FIELD_SIZE = 32;
+static const int SERIAL_FIELD = 0;
+static const int HWVER_FIELD = 1;
+static const int PCBASERIAL_FIELD = 2;
+
+static int wait_for_flash_not_busy() {
+  nrf_qspi_cinstr_conf_t instr = NRFX_QSPI_DEFAULT_CINSTR(RDSR1, 2);
+  instr.io2_level = true;
+  instr.io3_level = true;
+  uint8_t sr1 = 0xff;
+  int loops = 0;
+  while (1) {
+    nrfx_err_t err = nrfx_qspi_cinstr_xfer(&instr, NULL, &sr1);
+	if (err != NRFX_SUCCESS) return -EIO;
+	if (!(sr1 & 0x01)) break;
+	if (++loops > 1000) {
+		return -EIO;
+	}
+	k_usleep(50);
+  }
+  return 0;
+}
+
+static int read_otp_byte(int addr, uint8_t *value)
+{
+	nrf_qspi_cinstr_conf_t instr = NRFX_QSPI_DEFAULT_CINSTR(0x48, 7);
+	instr.io2_level = true;
+	instr.io3_level = true;
+	uint8_t out[6] = {0x00, 0x00, SECURITY_REGISTER_ID, 0x00, 0xff, 0xff};
+	out[2] |= (addr >> 8) & 0x03;
+	out[3] = (addr & 0xff);
+	uint8_t in[6] = {0};
+	nrfx_err_t err = nrfx_qspi_cinstr_xfer(&instr, out, in);
+	if (err != NRFX_SUCCESS) return -999;
+	*value = in[5];
+	return 0;
+}
+
+static int prog_otp_byte(int addr, uint8_t data)
+{
+	nrf_qspi_cinstr_conf_t instr = NRFX_QSPI_DEFAULT_CINSTR(0x42, 6);
+	instr.io2_level = true;
+	instr.io3_level = true;
+	instr.wren = true;
+	uint8_t tx_data[5] = {0x00, 0x00, SECURITY_REGISTER_ID, 0x00, 0xff};
+  	tx_data[2] |= (addr >> 8) & 0x03;
+  	tx_data[3] = (addr & 0xff);
+  	tx_data[4] = data;
+  	nrfx_err_t err = nrfx_qspi_cinstr_xfer(&instr, tx_data, NULL);
+	if (err != NRFX_SUCCESS) return -EIO;
+	return wait_for_flash_not_busy();
+}
+
+static int prog_otp_field(const struct shell *sh, int field_idx, uint8_t *data_string)
+{
+	int ret;
+
+	if (!initialized) {
+		shell_error(sh, "Flash module not initialized");
+		return -EPERM;
+	}
+
+	if (field_idx < 0 || field_idx > 2) {
+		return -EINVAL;
+	}
+
+	int len = strlen(data_string);
+	if (len >= 31) {
+		shell_error(sh, "Data string too long");
+		return -EINVAL;
+	}
+
+	ret = pm_device_action_run(flash, PM_DEVICE_ACTION_RESUME);
+	if (ret < 0) {
+		shell_error(sh, "Failed to resume flash (%d)", ret);
+		return ret;
+	}
+
+	for (int i = 0; i <= len; i++) {
+		ret = prog_otp_byte(field_idx * OTP_FIELD_SIZE + i, data_string[i]);
+		if (ret < 0) {
+			shell_error(sh, "Error programming byte (%d)", ret);
+			return ret;
+		}
+	}
+
+	return prog_otp_byte(field_idx * OTP_FIELD_SIZE + OTP_FIELD_SIZE - 1, 0);
+}
+
+static int cmd_otp_write(const struct shell *sh, size_t argc, char **argv)
+{
+	int ret;
+
+	if (argc < 3) {
+		shell_error(sh, "Missing arguments");
+		return -EINVAL;
+	}
+
+	int otp_field = 0;
+	if (!strcmp("serial", argv[1])) {
+		otp_field = SERIAL_FIELD;
+	} else if (!strcmp("pcba", argv[1])) {
+		otp_field = PCBASERIAL_FIELD;
+	} else if (!strcmp("hwver", argv[1])) {
+		otp_field = HWVER_FIELD;
+	} else {
+		shell_error(sh, "Invalid field (try serial, pcba, hwver)");
+		return -EINVAL;
+	}
+
+	ret = prog_otp_field(sh, otp_field, argv[2]);
+	if (ret < 0) {
+		shell_error(sh, "Failed to program OTP value (%d)", ret);
+		goto end;
+	}
+
+end:
+	(void)pm_device_action_run(flash, PM_DEVICE_ACTION_SUSPEND);
+
+	return ret;
+}
+
+static int cmd_otp_erase(const struct shell *sh, size_t argc, char **argv)
+{
+	int ret;
+
+	if (!initialized) {
+		shell_error(sh, "Flash module not initialized");
+		return -EPERM;
+	}
+
+	ret = pm_device_action_run(flash, PM_DEVICE_ACTION_RESUME);
+	if (ret < 0) {
+		shell_error(sh, "Failed to resume flash (%d)", ret);
+		return ret;
+	}
+
+	nrf_qspi_cinstr_conf_t instr = NRFX_QSPI_DEFAULT_CINSTR(0x44, 5);
+	instr.io2_level = true;
+	instr.io3_level = true;
+	instr.wren = true;
+	uint8_t out[4] = {0x00, 0x00, SECURITY_REGISTER_ID, 0x00};
+	nrfx_err_t err = nrfx_qspi_cinstr_xfer(&instr, out, NULL);
+	if (err != NRFX_SUCCESS) {
+		return -EIO;	
+	} 
+	wait_for_flash_not_busy();
+
+	(void)pm_device_action_run(flash, PM_DEVICE_ACTION_SUSPEND);
+
+	return ret;
+}
+
+static int cmd_otp_read(const struct shell *sh, size_t argc, char **argv)
+{
+	int ret;
+	uint8_t otp_fields[3][OTP_FIELD_SIZE];
+
+	if (!initialized) {
+		shell_error(sh, "Flash module not initialized");
+		return -EPERM;
+	}
+
+	ret = pm_device_action_run(flash, PM_DEVICE_ACTION_RESUME);
+	if (ret < 0) {
+		shell_error(sh, "Failed to resume flash (%d)", ret);
+		return ret;
+	}
+
+	for (int i = 0; i < OTP_FIELD_SIZE * 3; i++) {
+		ret = read_otp_byte(i, &otp_fields[0][i]);
+		if (ret < 0) {
+			shell_error(sh, "Failed to read OTP byte %d (%d)", i, ret);
+			return ret;
+		}
+	}
+
+	if (otp_fields[0][OTP_FIELD_SIZE-1] == 0) {
+		shell_print(sh, "serial: %s", otp_fields[SERIAL_FIELD]);
+	} else {
+		shell_print(sh, "serial blank");
+	}
+	
+	if (otp_fields[1][OTP_FIELD_SIZE-1] == 0) {
+		shell_print(sh, "pcba: %s", otp_fields[PCBASERIAL_FIELD]);
+	} else {
+		shell_print(sh, "pcba blank");
+	}
+
+	if (otp_fields[2][OTP_FIELD_SIZE-1] == 0) {
+		shell_print(sh, "hwver: %s", otp_fields[HWVER_FIELD]);
+	} else {
+		shell_print(sh, "hwver blank");
+	}
+
+	(void)pm_device_action_run(flash, PM_DEVICE_ACTION_SUSPEND);
+	return ret;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+	sub_otp_cmds, SHELL_CMD(read, NULL, "Read OTP values", cmd_otp_read),
+	SHELL_CMD_ARG(write, NULL, "Write OTP value: write serial|pcba|hwver VALUE", cmd_otp_write, 3, 0),
+	SHELL_CMD(erase, NULL, "Erase security register", cmd_otp_erase),
+	SHELL_SUBCMD_SET_END);
+
+SHELL_SUBCMD_ADD((hwv), otp, &sub_otp_cmds, "OTP", NULL, 0, 0);
 
 int flash_init(void)
 {
