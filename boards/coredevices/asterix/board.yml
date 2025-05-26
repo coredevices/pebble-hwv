@@ -1,5 +1,5 @@
 boards:
-- name: asterix_evt1
+- name: asterix
   vendor: coredevices
   socs:
     - name: nrf52840

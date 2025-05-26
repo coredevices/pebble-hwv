@@ -2,15 +2,15 @@
 
 #include <nordic/nrf52840_qiaa.dtsi>
 #include <nordic/nrf52840_partition.dtsi>
-#include "asterix_evt1-pinctrl.dtsi"
+#include "asterix-pinctrl.dtsi"
 
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <zephyr/dt-bindings/regulator/npm1300.h>
 #include <zephyr/dt-bindings/sensor/lsm6dso.h>
 
 / {
-	model = "Pebble Asterix EVT1";
-	compatible = "coredevices,asterix-evt1";
+	model = "Core Devices Asterix";
+	compatible = "coredevices,asterix";
 
 	chosen {
 		zephyr,console = &uart0;

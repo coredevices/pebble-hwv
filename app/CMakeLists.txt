@@ -22,7 +22,7 @@ target_sources(
     src/speaker.c
 )
 
-if (CONFIG_BOARD_ASTERIX_EVT1)
+if (CONFIG_BOARD_ASTERIX)
   target_sources(
     app
     PRIVATE

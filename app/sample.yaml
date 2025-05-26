@@ -4,6 +4,6 @@ sample:
 common:
   build_only: true
   integration_platforms:
-    - asterix_evt1
+    - asterix
 tests:
   app.default: {}

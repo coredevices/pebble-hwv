@@ -1,5 +1,5 @@
-identifier: asterix_evt1
-name: PEBBLE-ASTERIX-EVT1
+identifier: asterix
+name: COREDEVICES-ASTERIX
 type: mcu
 arch: arm
 toolchain:

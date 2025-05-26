@@ -30,7 +30,7 @@ cd pebble-hwv
 west build -b $BOARD_TARGET app
 ```
 
-where `$BOARD_TARGET` is the board target, e.g. `asterix_evt1`.
+where `$BOARD_TARGET` is the board target, e.g. `asterix`.
 
 Once you have built the application, run the following command to flash it:
 
@@ -45,7 +45,7 @@ By default boards use the `jlink` runner. Alternative runners can be used with
 
 Supported boards:
 
-- `asterix_evt1`
+- `asterix`
 
 ## Usage
 
