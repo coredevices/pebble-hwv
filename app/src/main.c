@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include <zephyr/shell/shell.h>
+#include <zephyr/sys/util.h>
 
 #include <app_version.h>
 
@@ -27,7 +28,7 @@ int main(void)
 {
 	int ret;
 
-	printf("HWV v%s\n", APP_VERSION_STRING);
+	printf("HWV v%s-%s\n", APP_VERSION_STRING, STRINGIFY(APP_BUILD_VERSION));
 
 	ret = buttons_init();
 	if (ret < 0) {
