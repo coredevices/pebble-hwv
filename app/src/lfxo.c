@@ -12,7 +12,7 @@
 #define MEASURE_TIME_S 10
 
 static const struct device *const sys_clock = DEVICE_DT_GET_ONE(nordic_nrf_clock);
-static const struct device *const timer = DEVICE_DT_GET(DT_NODELABEL(timer1));
+static const struct device *const timer = DEVICE_DT_GET(DT_NODELABEL(timer2));
 static bool initialized;
 
 static int cmd_lfxo_test(const struct shell *sh, size_t argc, char **argv)
