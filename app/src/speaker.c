@@ -40,10 +40,10 @@ static int codec_setup(void)
 		{0x21, 0x32},
 		// setup DIG_ROUTING_DAC to mono
 		{0x2a, 0xba},
-		// setup DAC_L_GAIN to -12dB
-		{0x45, 0x5f},
-		// setup DAC_R_GAIN to -12dB
-		{0x46, 0x5f},
+		// setup DAC_L_GAIN to 0dB
+		{0x45, 0x6f},
+		// setup DAC_R_GAIN to 0dB
+		{0x46, 0x6f},
 		// enable DAI, 16bit per channel
 		{0x29, 0x80},
 		// setup SYSTEM_MODES_OUTPUT to use DAC_R,DAC_L and LINE
@@ -133,7 +133,7 @@ static int cmd_speaker_play(const struct shell *sh, size_t argc, char **argv)
 		return ret;
 	}
 
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 40; i++) {
 		ret = i2s_trigger(i2s, I2S_DIR_TX, I2S_TRIGGER_START);
 		if (ret < 0) {
 			return ret;
