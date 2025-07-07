@@ -140,7 +140,11 @@
 			dischg-limit-microamp = <1000000>;
 			vbus-limit-microamp = <500000>;
 			thermistor-ohms = <10000>;
-			thermistor-beta = <3380>;
+			thermistor-beta = <3435>;
+			thermistor-cold-millidegrees = <3000>;
+			thermistor-cool-millidegrees = <10000>;
+			thermistor-warm-millidegrees = <45000>;
+			thermistor-hot-millidegrees = <45000>;
 			charging-enable;
 		};
 	};
